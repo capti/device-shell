@@ -1,0 +1,6 @@
+# Контейнерные файлы обязаны быть LF: CRLF ломает парсер Dockerfile,
+# а git с autocrlf на Windows иначе перепишет их при чекауте.
+Dockerfile text eol=lf
+.dockerignore text eol=lf
+docker-compose.yml text eol=lf
+*.sh text eol=lf

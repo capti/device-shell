@@ -1,0 +1,26 @@
+# Один сервис: FastAPI + SPA, данные — в ./data на хосте.
+services:
+  app:
+    build: .
+    image: qa-test-staff:latest
+    container_name: qa-test-staff
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # Учётная запись администратора создаётся при первом старте и больше
+      # не перезаписывается (см. DOCKER.md).
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: Admin12345
+      ADMIN_FULL_NAME: Администратор
+      # Адрес, с которого открывается сайт. Мутации без совпадающего Origin
+      # отклоняются с 403 — меняйте вместе с адресом доступа.
+      APP_BASE_URL: ${APP_BASE_URL:-http://localhost:8000}
+      APP_ENV: production
+      COOKIE_SECURE: "false"
+      LOG_LEVEL: INFO
+      # Пояс контейнера: по локальной дате считаются просрочка и границы
+      # отчётов. Меняйте на пояс своего региона (в контейнере по умолчанию UTC).
+      TZ: ${TZ:-Europe/Moscow}
+    volumes:
+      - ./data:/app/data

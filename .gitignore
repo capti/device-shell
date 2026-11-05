@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+*.egg-info/
+
+# Отчёты Uncle Bob tools (crapper/dryer/mutator)
+.metrics/
+target/
+
+# Окружение и данные
+.env
+data/
+data-dev-backup/
+*.db
+*.db-wal
+*.db-shm
+
+# Frontend
+node_modules/
+frontend/dist/
+
+# Редакторы и ОС
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

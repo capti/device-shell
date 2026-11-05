@@ -1,0 +1,41 @@
+# Контекст сборки — корень репозитория; в образ идёт только нужное.
+.git
+.gitignore
+.gitattributes
+
+# Данные и секреты: в образ не должны попасть БД, фото, бэкапы и .env.
+# Паттерны без /**/ матчатся только в корне контекста, поэтому каталоги
+# с именем data перечисляем явно.
+data/
+data-dev-backup/
+backend/data/
+backend/.env
+**/*.db
+**/*.db-wal
+**/*.db-shm
+
+# Сборка и кэши: каждый контейнер собирает своё. Кэши лежат в backend/
+# и frontend/, поэтому нужен префикс **/ — без него сборка падает
+# при отправке контекста (.pytest_cache отдаётся с правами, которые
+# Docker не может прочитать).
+**/node_modules/
+**/dist/
+**/.venv/
+**/__pycache__/
+**/*.py[cod]
+**/.pytest_cache/
+**/.ruff_cache/
+
+# Артефакты инструментов и локальная обвязка
+.metrics/
+target/
+.vscode/
+.idea/
+.opendevin/
+.opencode/
+.skills/
+.venv-backup/
+openspec/
+monitoring/
+*.ps1
+*.md

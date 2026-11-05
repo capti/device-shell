@@ -1,0 +1,54 @@
+[project]
+name = "qa-test-staff-backend"
+version = "0.1.0"
+description = "Backend сайта для учёта тестовых смартфонов"
+requires-python = ">=3.12"
+dependencies = [
+    "alembic>=1.14",
+    "argon2-cffi>=23.1",
+    "fastapi>=0.115",
+    "openpyxl>=3.1",
+    "pillow>=11.0",
+    "pydantic>=2.10",
+    "pydantic-settings>=2.6",
+    "python-multipart>=0.0.17",
+    "sqlalchemy>=2.0.36",
+    "uvicorn[standard]>=0.32",
+]
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28",
+    "pytest>=8.3",
+    "ruff>=0.8",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.ruff.lint.flake8-bugbear]
+# FastAPI-зависимости объявляются в значениях по умолчанию по конвенции фреймворка.
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.Query",
+    "fastapi.Path",
+    "fastapi.Body",
+    "fastapi.File",
+    "fastapi.Form",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Файлы миграций генерируются Alembic.
+"alembic/versions/*" = ["E501", "I001", "UP007", "UP035"]
