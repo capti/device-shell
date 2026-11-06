@@ -5,7 +5,7 @@ from datetime import date
 from fastapi import APIRouter, Depends, Query, Response
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, require_admin
 from app.clock import now_local
 from app.db import get_db
 from app.errors import AppError
@@ -24,7 +24,7 @@ XLSX_MEDIA_TYPE = (
 
 @router.get("/dashboard/stats", response_model=DashboardStats)
 def read_dashboard(
-    _user: User = Depends(get_current_user),
+    _user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> DashboardStats:
     """Счётчики дашборда и топ пяти давних просрочек."""
@@ -33,7 +33,7 @@ def read_dashboard(
 
 @router.get("/dashboard/charts", response_model=DashboardCharts)
 def read_dashboard_charts(
-    _user: User = Depends(get_current_user),
+    _user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> DashboardCharts:
     """Агрегаты для графиков: динамика по месяцам и возраст просрочки."""

@@ -76,9 +76,9 @@ def test_dashboard_counters_from_api(
     client: TestClient, make_user, make_device
 ) -> None:
     owner = register_user(make_user, username="owner")
-    register_user(make_user, username="admin", role="admin")
+    admin = register_user(make_user, username="admin", role="admin")
     make_device(owner=owner, inventory_no="QA-PH-001")
-    login_as(client, owner)
+    login_as(client, admin)
 
     response = client.get("/dashboard/stats")
 
@@ -150,11 +150,27 @@ def test_reports_available_to_plain_user(
     make_device(owner=owner, inventory_no="QA-PH-001")
     login_as(client, owner)
 
-    assert client.get("/dashboard/stats").status_code == 200
-    assert client.get("/dashboard/charts").status_code == 200
     assert client.get("/reports/holders").status_code == 200
     assert client.get("/reports/overdue").status_code == 200
     assert client.get("/reports/export.xlsx").status_code == 200
+
+
+def test_dashboard_forbidden_for_plain_user(client: TestClient, make_user) -> None:
+    plain = register_user(make_user, username="plain")
+    login_as(client, plain)
+
+    for path in ("/dashboard/stats", "/dashboard/charts"):
+        response = client.get(path)
+        assert response.status_code == 403, path
+        assert response.json()["code"] == "FORBIDDEN"
+
+
+def test_dashboard_available_to_admin(client: TestClient, make_user) -> None:
+    admin = register_user(make_user, username="boss", role="admin")
+    login_as(client, admin)
+
+    assert client.get("/dashboard/stats").status_code == 200
+    assert client.get("/dashboard/charts").status_code == 200
 
 
 def _months_ago(count: int) -> datetime:

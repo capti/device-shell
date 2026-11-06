@@ -11,8 +11,8 @@ import { logout } from '../api/auth'
 import type { UserBrief } from '../api/auth'
 import { NotificationsBell } from './NotificationsBell'
 
-const NAV_ITEMS = [
-  { label: 'Дашборд', to: '/dashboard' },
+const NAV_ITEMS: { label: string; to: string; adminOnly?: boolean }[] = [
+  { label: 'Дашборд', to: '/dashboard', adminOnly: true },
   { label: 'Устройства', to: '/devices' },
   { label: 'Люди', to: '/people' },
   { label: 'Отчёты', to: '/reports' },
@@ -60,7 +60,9 @@ export function AppShellFrame({ user }: { user: UserBrief }) {
       </AppShellHeader>
       <AppShellNavbar>
         <AppShellSection grow>
-          {NAV_ITEMS.map((item) => (
+          {NAV_ITEMS.filter(
+            (item) => !item.adminOnly || user.role === 'admin',
+          ).map((item) => (
             <NavLink
               key={item.to}
               component={Link}

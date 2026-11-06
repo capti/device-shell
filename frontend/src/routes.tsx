@@ -34,6 +34,10 @@ function ProtectedLayout() {
     // 401 — тихий редирект; прочие ошибки покажет страница входа своим состоянием
     return <Navigate to="/login" replace state={{ from: location.pathname }} />
   }
+  if (location.pathname === '/dashboard' && data.role !== 'admin') {
+    // Дашборд — только для admin; до рендера страницы, значит запросы не уходят
+    return <Navigate to="/devices" replace />
+  }
   return <AppShellFrame user={data} />
 }
 
