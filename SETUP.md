@@ -42,19 +42,18 @@ npm install
 
 ## Запуск в разработке
 
-Нужны **два процесса**: backend на `:8000` и Vite dev-сервер на `:5173`.
+Одна команда поднимает весь стек с горячей перезагрузкой: backend на `:8000`
+(uvicorn `--reload`) и Vite на `:5173` (HMR). Браузер открывается сам на
+`http://localhost:5173`, `Ctrl+C` останавливает оба процесса.
 
 ```powershell
-# Терминал 1 — backend (из корня проекта)
 .\dev.ps1
-
-# Терминал 2 — frontend
-cd frontend
-npm run dev
 ```
 
-Открывайте сайт на **http://localhost:5173** — Vite проксирует `/api` на
-backend, cookie сессии работают на том же origin.
+Флаги: `-NoBrowser` — не открывать браузер; `-BackendOnly` — только backend
+без Vite (полезно, если правите только API).
+
+Vite проксирует `/api` на backend, cookie сессии работают на том же origin.
 
 `dev.ps1` сам выставляет `APP_BASE_URL=http://localhost:5173`. Если backend
 запускаете вручную — задайте эту переменную сами, иначе проверка Origin

@@ -45,7 +45,8 @@
 - **БД:** SQLite в режиме WAL, файл `data/qa.db`.
 - **Auth:** серверные сессии в БД + httpOnly cookie (не JWT — проще отзыв сессии).
 - **Локальный запуск:** backend на `:8000`, frontend dev-сервер Vite на
-  `:5173`; `dev.ps1` запускает только backend, Vite запускается отдельно.
+  `:5173`; `dev.ps1` запускает оба процесса одной командой, оба с горячей
+  перезагрузкой.
 - **Production:** FastAPI обслуживает API и `/media/*`, но не SPA. Сборка
   `frontend/dist` раздаётся статическим сервером; reverse proxy с HTTPS
   направляет API и `/media/*` в FastAPI и поддерживает fallback SPA-маршрутов.

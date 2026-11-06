@@ -95,7 +95,7 @@ npm install
 npm run dev        # :5173, проксирует /api на :8000
 npm run build
 
-# всё сразу (Windows)
+# всё сразу (Windows): backend + Vite в одном окне, оба с hot reload
 .\dev.ps1
 ```
 

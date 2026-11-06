@@ -32,6 +32,9 @@ npm run dev      # http://localhost:5173
 npm run build    # production-сборка в frontend/dist
 ```
 
+Из корня проекта `.\dev.ps1` запускает backend и Vite одной командой: оба
+процесса с горячей перезагрузкой, браузер открывается сам.
+
 В production FastAPI раздаёт `frontend/dist` вместе с API и `/media/*` с одного
 порта: файлы отдаются как есть, на навигацию браузера — `index.html`. Настройте
 reverse proxy с HTTPS и направляйте в backend все пути — API идут по корневым
@@ -40,9 +43,10 @@ Docker — в [SETUP.md](SETUP.md).
 
 В dev браузер открывает сайт на `:5173`, поэтому мутации приходят с Origin
 `http://localhost:5173`, а проверка Origin сверяет его с `APP_BASE_URL`
-(по умолчанию `http://localhost:8000`). Запускайте backend из корня проекта
-через `.\dev.ps1` — он задаёт `APP_BASE_URL=http://localhost:5173` для
-dev-режима. Если поднимаете backend вручную, передайте эту переменную сами:
+(по умолчанию `http://localhost:8000`). Запускайте проект из корня через
+`.\dev.ps1` — он поднимает backend и Vite и задаёт
+`APP_BASE_URL=http://localhost:5173` для dev-режима. Если поднимаете backend
+вручную, передайте эту переменную сами:
 
 ```powershell
 $env:APP_BASE_URL = "http://localhost:5173"
@@ -95,7 +99,8 @@ Invoke-RestMethod http://localhost:8000/health
 # ok     0.1.0
 ```
 
-Из корня проекта то же самое запускает `.\dev.ps1`.
+Из корня проекта `.\dev.ps1` запускает backend вместе с Vite — оба с горячей
+перезагрузкой, флаг `-BackendOnly` оставляет только backend.
 
 ### Мониторинг с Gatus
 
