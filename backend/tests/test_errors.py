@@ -1,7 +1,9 @@
 from fastapi import HTTPException
+from fastapi.exceptions import RequestValidationError
 from fastapi.testclient import TestClient
 from pydantic import BaseModel
 
+from app.errors import _validation_message
 from app.main import app
 
 
@@ -91,3 +93,11 @@ def test_app_error_uses_error_envelope() -> None:
         "code": "ACTIVE_CHECKOUT",
         "message": "Устройство выдано",
     }
+
+
+def test_validation_message_empty_errors_uses_default() -> None:
+    assert (
+        _validation_message(RequestValidationError([]))
+        == "Некорректные данные запроса"
+    )
+

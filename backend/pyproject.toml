@@ -30,6 +30,9 @@ package = false
 testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "-q"
+filterwarnings = [
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated:starlette.exceptions.StarletteDeprecationWarning",
+]
 
 [tool.ruff]
 target-version = "py312"

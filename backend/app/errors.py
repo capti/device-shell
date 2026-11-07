@@ -28,7 +28,7 @@ _DEFAULT_CODES = {
     status.HTTP_404_NOT_FOUND: "NOT_FOUND",
     status.HTTP_405_METHOD_NOT_ALLOWED: "METHOD_NOT_ALLOWED",
     status.HTTP_409_CONFLICT: "CONFLICT",
-    422: "VALIDATION_ERROR",
+    status.HTTP_422_UNPROCESSABLE_CONTENT: "VALIDATION_ERROR",
     status.HTTP_429_TOO_MANY_REQUESTS: "RATE_LIMITED",
     status.HTTP_500_INTERNAL_SERVER_ERROR: "INTERNAL_ERROR",
 }
@@ -40,7 +40,7 @@ _DEFAULT_MESSAGES = {
     status.HTTP_404_NOT_FOUND: "Запрос не найден",
     status.HTTP_405_METHOD_NOT_ALLOWED: "Метод не поддерживается",
     status.HTTP_409_CONFLICT: "Конфликт данных",
-    422: "Некорректные данные запроса",
+    status.HTTP_422_UNPROCESSABLE_CONTENT: "Некорректные данные запроса",
     status.HTTP_429_TOO_MANY_REQUESTS: "Слишком много запросов",
     status.HTTP_500_INTERNAL_SERVER_ERROR: "Внутренняя ошибка сервера",
 }
@@ -70,7 +70,7 @@ def _validation_message(exc: RequestValidationError) -> str:
         fields.append(".".join(location) or "body")
     unique_fields = list(dict.fromkeys(fields))
     if not unique_fields:
-        return _DEFAULT_MESSAGES[status.HTTP_422_UNPROCESSABLE_ENTITY]
+        return _DEFAULT_MESSAGES[status.HTTP_422_UNPROCESSABLE_CONTENT]
     return f"Некорректные данные: {', '.join(unique_fields)}"
 
 
@@ -106,7 +106,7 @@ def register_exception_handlers(app: FastAPI) -> None:
     ) -> JSONResponse:
         message = _validation_message(exc)
         return error_response(
-            status.HTTP_422_UNPROCESSABLE_ENTITY,
-            _DEFAULT_CODES[status.HTTP_422_UNPROCESSABLE_ENTITY],
+            status.HTTP_422_UNPROCESSABLE_CONTENT,
+            _DEFAULT_CODES[status.HTTP_422_UNPROCESSABLE_CONTENT],
             message,
         )
