@@ -40,6 +40,7 @@ def list_devices(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> DeviceListResponse:
+    """Список устройств с фильтрацией по статусу, владельцу, держателю, просрочке и архиву."""
     params = DeviceListParams(
         query=q,
         status=status_filter,
@@ -64,6 +65,7 @@ def create_device(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> DeviceRead:
+    """Создание карточки нового тестового устройства с закреплением владельца."""
     device = devices_service.create_device(db, payload, user)
     return device_card(db, device.id)
 
@@ -74,6 +76,7 @@ def read_device(
     _user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> DeviceRead:
+    """Карточка устройства: владелец, держатель, активная выдача и просрочка."""
     return device_card(db, device_id)
 
 
@@ -84,6 +87,7 @@ def update_device(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> DeviceRead:
+    """Редактирование атрибутов неархивного устройства владельцем или администратором."""
     device = devices_service.get_device(db, device_id)
     devices_service.update_device(db, device, payload, user)
     return device_card(db, device_id)
@@ -91,6 +95,7 @@ def update_device(
 
 @router.delete("/{device_id}", status_code=status.HTTP_405_METHOD_NOT_ALLOWED)
 def delete_device(device_id: int, _user: User = Depends(get_current_user)) -> None:
+    """Физическое удаление устройства запрещено — используйте отправку в архив."""
     reject_deletion("Удаление не поддерживается. Отправьте устройство в архив")
 
 
@@ -100,6 +105,7 @@ def archive_device(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> DeviceRead:
+    """Отправка устройства в архив владельцем или администратором (без активной выдачи)."""
     device = devices_service.get_device(db, device_id)
     devices_service.archive_device(db, device, user)
     return device_card(db, device_id)
@@ -112,6 +118,7 @@ def restore_device(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> DeviceRead:
+    """Восстановление устройства из архива с проверкой активности владельца."""
     device = devices_service.get_device(db, device_id)
     devices_service.restore_device(db, device, payload or RestoreRequest(), user)
     return device_card(db, device_id)
@@ -134,6 +141,7 @@ def read_history(
     _user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[DeviceEventRead]:
+    """Хронологическая лента событий аудита по конкретному устройству."""
     events = devices_service.get_history(db, device_id)
     users = users_by_id(db, (event.actor_id for event in events))
     return [_to_event(event, users) for event in events]

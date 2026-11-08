@@ -59,6 +59,7 @@ def checkout_device(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> DeviceRead:
+    """Выдача активного устройства другому сотруднику (`holder != owner`)."""
     device = devices_service.get_device(db, device_id)
     checkouts_service.checkout_device(db, device, payload, user)
     return device_card(db, device_id)
@@ -71,6 +72,7 @@ def return_device(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> DeviceRead:
+    """Возврат устройства владельцу с фиксацией отчёта о состоянии."""
     device = devices_service.get_device(db, device_id)
     checkouts_service.return_device(db, device, payload, user)
     return device_card(db, device_id)
@@ -83,6 +85,7 @@ def transfer_device(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> DeviceRead:
+    """Передача выданного устройства от текущего держателя другому сотруднику."""
     device = devices_service.get_device(db, device_id)
     checkouts_service.transfer_device(db, device, payload, user)
     return device_card(db, device_id)
@@ -95,6 +98,7 @@ def change_owner(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> DeviceRead:
+    """Смена владельца устройства (автозакрывает выдачу у текущего держателя)."""
     device = devices_service.get_device(db, device_id)
     ownership.change_owner(db, device, payload, user)
     return device_card(db, device_id)
@@ -107,6 +111,7 @@ def change_status(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> DeviceRead:
+    """Переключение статуса устройства между `active` и `lost` владельцем или администратором."""
     device = devices_service.get_device(db, device_id)
     maintenance.change_status(db, device, payload, user)
     return device_card(db, device_id)
@@ -118,5 +123,6 @@ def read_checkouts(
     _user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[CheckoutRead]:
+    """История всех выдач и возвратов конкретного устройства."""
     devices_service.get_device(db, device_id)
     return _checkout_list(db, checkouts_service.list_checkouts(db, device_id))

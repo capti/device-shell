@@ -53,6 +53,7 @@ def login(
     response: Response,
     db: Session = Depends(get_db),
 ) -> User:
+    """Аутентификация по логину и паролю с установкой сессионной cookie `qa_session`."""
     key = _rate_limit_key(request, payload.username)
     try:
         login_rate_limiter.check(key)
@@ -105,6 +106,7 @@ def logout(
     response: Response,
     db: Session = Depends(get_db),
 ) -> None:
+    """Завершение текущей сессии и удаление cookie `qa_session`."""
     token = request.cookies.get(settings.session_cookie_name)
     if token:
         revoke_session(db, token)
@@ -113,6 +115,7 @@ def logout(
 
 @router.get("/me", response_model=UserProfile)
 def me(user: User = Depends(get_current_user)) -> User:
+    """Профиль текущего аутентифицированного пользователя по сессии `qa_session`."""
     return user
 
 
@@ -123,6 +126,7 @@ def change_password(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> None:
+    """Смена собственного пароля с отзывом всех остальных сессий пользователя."""
     users_service.change_password(
         db,
         user,

@@ -39,6 +39,7 @@ def list_notifications(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> NotificationListResponse:
+    """Список уведомлений пользователя со счётчиком непрочитанных и просрочками."""
     result = notifications_service.list_notifications(
         db, recipient_id=user.id, page=page, page_size=page_size
     )
@@ -58,6 +59,7 @@ def read_notification(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> NotificationRead:
+    """Отметка отдельного уведомления текущего пользователя как прочитанного."""
     notification = notifications_service.mark_read(
         db, notification_id=notification_id, recipient_id=user.id
     )
@@ -70,5 +72,6 @@ def read_all(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ReadAllResponse:
+    """Массовая отметка всех непрочитанных уведомлений текущего пользователя прочитанными."""
     updated = notifications_service.mark_all_read(db, recipient_id=user.id)
     return ReadAllResponse(updated=updated)

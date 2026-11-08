@@ -45,6 +45,7 @@ def upload_photos(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[PhotoRead]:
+    """Загрузка фотографий устройства (до 5 штук на устройство, до 10 МБ каждая, JPEG/PNG/WebP)."""
     device = devices_service.get_device(db, device_id)
     payloads = [file.file.read() for file in files]
     photos = photos_service.upload_photos(db, device, user, payloads, report_id)
@@ -57,6 +58,7 @@ def read_photos(
     _user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[PhotoRead]:
+    """Список фотографий устройства с путями к оригиналу и миниатюре."""
     devices_service.get_device(db, device_id)
     return _photo_list(db, photos_service.list_photos(db, device_id))
 
@@ -67,6 +69,7 @@ def delete_photo(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> None:
+    """Удаление фотографии устройства её автором, владельцем устройства или администратором."""
     photo = db.scalar(select(DevicePhoto).where(DevicePhoto.id == photo_id))
     if photo is None:
         raise AppError("NOT_FOUND", "Фото не найдено", 404)

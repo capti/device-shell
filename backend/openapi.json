@@ -44,6 +44,7 @@
           "auth"
         ],
         "summary": "Login",
+        "description": "Аутентификация по логину и паролю с установкой сессионной cookie `qa_session`.",
         "operationId": "login_auth_login_post",
         "requestBody": {
           "content": {
@@ -67,11 +68,41 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Ошибка валидации входных данных: VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Неверный логин или пароль: INVALID_CREDENTIALS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недопустимый источник запроса: FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Превышен лимит попыток входа: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -85,10 +116,21 @@
           "auth"
         ],
         "summary": "Logout",
+        "description": "Завершение текущей сессии и удаление cookie `qa_session`.",
         "operationId": "logout_auth_logout_post",
         "responses": {
           "204": {
             "description": "Successful Response"
+          },
+          "403": {
+            "description": "Недопустимый источник запроса: FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -99,6 +141,7 @@
           "auth"
         ],
         "summary": "Me",
+        "description": "Профиль текущего аутентифицированного пользователя по сессии `qa_session`.",
         "operationId": "me_auth_me_get",
         "responses": {
           "200": {
@@ -110,8 +153,23 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
-        }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ]
       }
     },
     "/auth/change-password": {
@@ -120,6 +178,7 @@
           "auth"
         ],
         "summary": "Change Password",
+        "description": "Смена собственного пароля с отзывом всех остальных сессий пользователя.",
         "operationId": "change_password_auth_change_password_post",
         "requestBody": {
           "content": {
@@ -136,16 +195,41 @@
             "description": "Successful Response"
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Неверный текущий пароль или слабый новый пароль: INVALID_PASSWORD, WEAK_PASSWORD, VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недопустимый источник запроса: FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
           }
-        }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ]
       }
     },
     "/users": {
@@ -154,7 +238,13 @@
           "users"
         ],
         "summary": "List Users",
+        "description": "Список сотрудников со счётчиками закреплённых и взятых на руки устройств.",
         "operationId": "list_users_users_get",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "include_inactive",
@@ -183,11 +273,21 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Ошибка валидации входных данных: VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -199,7 +299,13 @@
           "users"
         ],
         "summary": "Create User",
+        "description": "Создание учётной записи сотрудника (доступно только администратору).",
         "operationId": "create_user_users_post",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -222,11 +328,41 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Некорректные данные или слабый пароль: VALIDATION_ERROR, WEAK_PASSWORD",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступно только администратору: FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Логин уже занят: USERNAME_TAKEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -240,7 +376,13 @@
           "users"
         ],
         "summary": "Read User",
+        "description": "Карточка сотрудника со счётчиками владения и активных выдач.",
         "operationId": "read_user_users__user_id__get",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "user_id",
@@ -264,11 +406,31 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Ошибка валидации входных данных: VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Сотрудник не найден: USER_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -280,7 +442,13 @@
           "users"
         ],
         "summary": "Update User",
+        "description": "Обновление профиля и роли сотрудника (доступно только администратору).",
         "operationId": "update_user_users__user_id__patch",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "user_id",
@@ -314,11 +482,51 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Ошибка валидации входных данных: VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступно только администратору: FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Сотрудник не найден: USER_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Нельзя разжаловать последнего администратора: LAST_ADMIN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -330,7 +538,13 @@
           "users"
         ],
         "summary": "Delete User",
+        "description": "Физическое удаление сотрудника запрещено — используйте деактивацию.",
         "operationId": "delete_user_users__user_id__delete",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "user_id",
@@ -344,19 +558,41 @@
         ],
         "responses": {
           "405": {
-            "description": "Successful Response",
+            "description": "Физическое удаление сотрудников запрещено: METHOD_NOT_ALLOWED",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Ошибка валидации входных данных: VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недопустимый источник запроса: FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -370,7 +606,13 @@
           "users"
         ],
         "summary": "Deactivate User",
+        "description": "Деактивация сотрудника с архивацией его устройств (при отсутствии активных выдач).",
         "operationId": "deactivate_user_users__user_id__deactivate_post",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "user_id",
@@ -394,11 +636,51 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Ошибка валидации входных данных: VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступно только администратору: FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Сотрудник не найден: USER_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "У сотрудника есть устройства в обороте, он уже деактивирован или является последним администратором: HAS_DEVICES, ALREADY_INACTIVE, LAST_ADMIN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -412,7 +694,13 @@
           "users"
         ],
         "summary": "Activate User",
+        "description": "Повторная активация деактивированного сотрудника (только для администратора).",
         "operationId": "activate_user_users__user_id__activate_post",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "user_id",
@@ -436,11 +724,51 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Ошибка валидации входных данных: VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступно только администратору: FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Сотрудник не найден: USER_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Сотрудник уже активен: ALREADY_ACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -454,7 +782,13 @@
           "users"
         ],
         "summary": "Reset Password",
+        "description": "Сброс пароля сотрудника администратором с отзывом всех его сессий.",
         "operationId": "reset_password_users__user_id__password_post",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "user_id",
@@ -481,11 +815,41 @@
             "description": "Successful Response"
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Слишком короткий пароль: WEAK_PASSWORD, VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступно только администратору: FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Сотрудник не найден: USER_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -499,7 +863,13 @@
           "devices"
         ],
         "summary": "List Devices",
+        "description": "Список устройств с фильтрацией по статусу, владельцу, держателю, просрочке и архиву.",
         "operationId": "list_devices_devices_get",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "q",
@@ -666,11 +1036,21 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Ошибка валидации входных данных: VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -682,7 +1062,13 @@
           "devices"
         ],
         "summary": "Create Device",
+        "description": "Создание карточки нового тестового устройства с закреплением владельца.",
         "operationId": "create_device_devices_post",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -705,11 +1091,41 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Некорректные данные или неактивный владелец: VALIDATION_ERROR, OWNER_INACTIVE",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Назначать владельцем другого сотрудника может только администратор: FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Дубликат инвентарного номера, IMEI или серийного номера: INVENTORY_TAKEN, IMEI_TAKEN, SERIAL_TAKEN, CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -723,7 +1139,13 @@
           "devices"
         ],
         "summary": "Read Device",
+        "description": "Карточка устройства: владелец, держатель, активная выдача и просрочка.",
         "operationId": "read_device_devices__device_id__get",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "device_id",
@@ -747,11 +1169,31 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Ошибка валидации входных данных: VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Устройство не найдено: DEVICE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -763,7 +1205,13 @@
           "devices"
         ],
         "summary": "Update Device",
+        "description": "Редактирование атрибутов неархивного устройства владельцем или администратором.",
         "operationId": "update_device_devices__device_id__patch",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "device_id",
@@ -797,11 +1245,51 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Ошибка валидации входных данных: VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Управлять устройством может только владелец или администратор: FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Устройство не найдено: DEVICE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Устройство в архиве или конфликт идентификаторов: DEVICE_ARCHIVED, INVENTORY_TAKEN, IMEI_TAKEN, SERIAL_TAKEN, CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -813,7 +1301,13 @@
           "devices"
         ],
         "summary": "Delete Device",
+        "description": "Физическое удаление устройства запрещено — используйте отправку в архив.",
         "operationId": "delete_device_devices__device_id__delete",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "device_id",
@@ -827,19 +1321,41 @@
         ],
         "responses": {
           "405": {
-            "description": "Successful Response",
+            "description": "Физическое удаление устройств запрещено: METHOD_NOT_ALLOWED",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
               }
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Ошибка валидации входных данных: VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недопустимый источник запроса: FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -853,7 +1369,13 @@
           "devices"
         ],
         "summary": "Archive Device",
+        "description": "Отправка устройства в архив владельцем или администратором (без активной выдачи).",
         "operationId": "archive_device_devices__device_id__archive_post",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "device_id",
@@ -877,11 +1399,51 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Ошибка валидации входных данных: VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Управлять устройством может только владелец или администратор: FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Устройство не найдено: DEVICE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "У устройства есть активная выдача или оно уже в архиве: ACTIVE_CHECKOUT, ALREADY_ARCHIVED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -895,7 +1457,13 @@
           "devices"
         ],
         "summary": "Restore Device",
+        "description": "Восстановление устройства из архива с проверкой активности владельца.",
         "operationId": "restore_device_devices__device_id__restore_post",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "device_id",
@@ -936,11 +1504,51 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Прежний владелец деактивирован или новый владелец неактивен: OWNER_REQUIRED, OWNER_INACTIVE, VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Управлять устройством может только владелец или администратор: FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Устройство не найдено: DEVICE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Устройство не находится в архиве: NOT_ARCHIVED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -954,7 +1562,13 @@
           "devices"
         ],
         "summary": "Read History",
+        "description": "Хронологическая лента событий аудита по конкретному устройству.",
         "operationId": "read_history_devices__device_id__history_get",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "device_id",
@@ -982,11 +1596,31 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Ошибка валидации входных данных: VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Устройство не найдено: DEVICE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1000,7 +1634,13 @@
           "rotation"
         ],
         "summary": "Checkout Device",
+        "description": "Выдача активного устройства другому сотруднику (`holder != owner`).",
         "operationId": "checkout_device_devices__device_id__checkout_post",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "device_id",
@@ -1034,11 +1674,51 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Держатель неактивен или дата возврата в прошлом: HOLDER_INACTIVE, VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Управлять устройством может только владелец или администратор: FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Устройство не найдено: DEVICE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Выдача самому себе, повторная выдача или устройство недоступно: SELF_CHECKOUT, ALREADY_CHECKED_OUT, DEVICE_ARCHIVED, DEVICE_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1052,7 +1732,13 @@
           "rotation"
         ],
         "summary": "Return Device",
+        "description": "Возврат устройства владельцу с фиксацией отчёта о состоянии.",
         "operationId": "return_device_devices__device_id__return_post",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "device_id",
@@ -1086,11 +1772,51 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Ошибка валидации входных данных: VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Действие доступно держателю, владельцу или администратору: FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Устройство не найдено: DEVICE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "У устройства нет активной выдачи: NO_ACTIVE_CHECKOUT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1104,7 +1830,13 @@
           "rotation"
         ],
         "summary": "Transfer Device",
+        "description": "Передача выданного устройства от текущего держателя другому сотруднику.",
         "operationId": "transfer_device_devices__device_id__transfer_post",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "device_id",
@@ -1138,11 +1870,51 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Новый держатель неактивен или дата возврата в прошлом: HOLDER_INACTIVE, VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Действие доступно держателю, владельцу или администратору: FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Устройство не найдено: DEVICE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Нет активной выдачи, передача тому же держателю или владельцу: NO_ACTIVE_CHECKOUT, SAME_HOLDER, SELF_CHECKOUT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1156,7 +1928,13 @@
           "rotation"
         ],
         "summary": "Change Owner",
+        "description": "Смена владельца устройства (автозакрывает выдачу у текущего держателя).",
         "operationId": "change_owner_devices__device_id__owner_post",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "device_id",
@@ -1190,11 +1968,51 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Новый владелец не найден или деактивирован: OWNER_INACTIVE, VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Управлять устройством может только владелец или администратор: FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Устройство не найдено: DEVICE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Устройство находится в архиве: DEVICE_ARCHIVED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1208,7 +2026,13 @@
           "rotation"
         ],
         "summary": "Change Status",
+        "description": "Переключение статуса устройства между `active` и `lost` владельцем или администратором.",
         "operationId": "change_status_devices__device_id__status_post",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "device_id",
@@ -1242,11 +2066,51 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Не указан комментарий при возврате потерянного устройства: COMMENT_REQUIRED, VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Управлять устройством может только владелец или администратор: FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Устройство не найдено: DEVICE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Устройство в архиве или недопустимый переход статуса: DEVICE_ARCHIVED, INVALID_STATUS_TRANSITION",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1260,7 +2124,13 @@
           "rotation"
         ],
         "summary": "Read Checkouts",
+        "description": "История всех выдач и возвратов конкретного устройства.",
         "operationId": "read_checkouts_devices__device_id__checkouts_get",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "device_id",
@@ -1288,11 +2158,31 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Ошибка валидации входных данных: VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Устройство не найдено: DEVICE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1306,7 +2196,13 @@
           "maintenance"
         ],
         "summary": "Read Repairs",
+        "description": "Журнал ремонтов устройства в порядке от новых к старым.",
         "operationId": "read_repairs_devices__device_id__repairs_get",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "device_id",
@@ -1334,11 +2230,31 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Ошибка валидации входных данных: VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Устройство не найдено: DEVICE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1350,7 +2266,13 @@
           "maintenance"
         ],
         "summary": "Start Repair",
+        "description": "Отправка активного устройства в ремонт с переводом в статус `repair`.",
         "operationId": "start_repair_devices__device_id__repairs_post",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "device_id",
@@ -1384,11 +2306,51 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Ошибка валидации входных данных: VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Управлять устройством может только владелец или администратор: FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Устройство не найдено: DEVICE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Устройство выдано, в архиве или недоступно для отправки в ремонт: ACTIVE_CHECKOUT, DEVICE_ARCHIVED, DEVICE_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1402,7 +2364,13 @@
           "maintenance"
         ],
         "summary": "Finish Repair",
+        "description": "Завершение ремонта устройства с возвратом статуса в `active`.",
         "operationId": "finish_repair_devices__device_id__repairs__repair_id__finish_post",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "device_id",
@@ -1452,11 +2420,51 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Ошибка валидации входных данных: VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Управлять устройством может только владелец или администратор: FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Устройство или запись ремонта не найдены: DEVICE_NOT_FOUND, REPAIR_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Ремонт уже завершён: REPAIR_ALREADY_FINISHED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1470,7 +2478,13 @@
           "maintenance"
         ],
         "summary": "Read Condition Reports",
+        "description": "Список отчётов о состоянии устройства вместе с прикреплёнными фотографиями.",
         "operationId": "read_condition_reports_devices__device_id__condition_reports_get",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "device_id",
@@ -1498,11 +2512,31 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Ошибка валидации входных данных: VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Устройство не найдено: DEVICE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1514,7 +2548,13 @@
           "maintenance"
         ],
         "summary": "Create Condition Report",
+        "description": "Добавление отчёта о состоянии устройства держателем, владельцем или администратором.",
         "operationId": "create_condition_report_devices__device_id__condition_reports_post",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "device_id",
@@ -1548,11 +2588,51 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Ошибка валидации входных данных: VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Действие доступно держателю, владельцу или администратору: FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Устройство не найдено: DEVICE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Устройство находится в архиве: DEVICE_ARCHIVED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1566,7 +2646,13 @@
           "notifications"
         ],
         "summary": "List Notifications",
+        "description": "Список уведомлений пользователя со счётчиком непрочитанных и просрочками.",
         "operationId": "list_notifications_notifications_get",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "page",
@@ -1604,11 +2690,21 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Ошибка валидации входных данных: VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1622,7 +2718,13 @@
           "notifications"
         ],
         "summary": "Read Notification",
+        "description": "Отметка отдельного уведомления текущего пользователя как прочитанного.",
         "operationId": "read_notification_notifications__notification_id__read_post",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "notification_id",
@@ -1646,11 +2748,41 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Ошибка валидации входных данных: VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недопустимый источник запроса: FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Уведомление не найдено: NOTIFICATION_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1664,6 +2796,7 @@
           "notifications"
         ],
         "summary": "Read All",
+        "description": "Массовая отметка всех непрочитанных уведомлений текущего пользователя прочитанными.",
         "operationId": "read_all_notifications_read_all_post",
         "responses": {
           "200": {
@@ -1675,8 +2808,33 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Недопустимый источник запроса: FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
-        }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ]
       }
     },
     "/devices/{device_id}/photos": {
@@ -1685,7 +2843,13 @@
           "photos"
         ],
         "summary": "Upload Photos",
+        "description": "Загрузка фотографий устройства (до 5 штук на устройство, до 10 МБ каждая, JPEG/PNG/WebP).",
         "operationId": "upload_photos_devices__device_id__photos_post",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "device_id",
@@ -1723,11 +2887,51 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Превышен лимит 5 фото, размер 10 МБ, неверный формат или чужой отчёт: PHOTO_LIMIT, PHOTO_TOO_LARGE, UNSUPPORTED_FORMAT, REPORT_DEVICE_MISMATCH, VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Действие доступно держателю, владельцу или администратору: FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Устройство не найдено: DEVICE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Устройство находится в архиве: DEVICE_ARCHIVED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1739,7 +2943,13 @@
           "photos"
         ],
         "summary": "Read Photos",
+        "description": "Список фотографий устройства с путями к оригиналу и миниатюре.",
         "operationId": "read_photos_devices__device_id__photos_get",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "device_id",
@@ -1767,11 +2977,31 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Ошибка валидации входных данных: VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Устройство не найдено: DEVICE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1785,7 +3015,13 @@
           "photos"
         ],
         "summary": "Delete Photo",
+        "description": "Удаление фотографии устройства её автором, владельцем устройства или администратором.",
         "operationId": "delete_photo_photos__photo_id__delete",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "photo_id",
@@ -1802,11 +3038,51 @@
             "description": "Successful Response"
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Ошибка валидации входных данных: VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Удалять фото может автор, владелец или администратор: FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Фото или устройство не найдено: NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Устройство находится в архиве: DEVICE_ARCHIVED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -1832,8 +3108,33 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступно только администратору: FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
-        }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ]
       }
     },
     "/dashboard/charts": {
@@ -1854,8 +3155,33 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступно только администратору: FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
-        }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ]
       }
     },
     "/reports/holders": {
@@ -1876,8 +3202,23 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
-        }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ]
       }
     },
     "/reports/overdue": {
@@ -1898,8 +3239,23 @@
                 }
               }
             }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
-        }
+        },
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ]
       }
     },
     "/reports/export.xlsx": {
@@ -1910,6 +3266,11 @@
         "summary": "Export Xlsx",
         "description": "Excel «Все устройства / Просроченные / История выдач» за период.",
         "operationId": "export_xlsx_reports_export_xlsx_get",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "q",
@@ -2067,11 +3428,21 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Ошибка валидации входных данных: VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -2087,6 +3458,11 @@
         "summary": "List Audit Events",
         "description": "Глобальный журнал аудита: события устройств с фильтрами по дате и устройству.",
         "operationId": "list_audit_events_audit_events_get",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "device_id",
@@ -2157,11 +3533,31 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Ошибка валидации входных данных: VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступно только администратору: FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -2177,6 +3573,11 @@
         "summary": "List Login Events",
         "description": "Журнал входов: попытки с фильтрами по дате, логину и исходу.",
         "operationId": "list_login_events_audit_logins_get",
+        "security": [
+          {
+            "SessionCookie": []
+          }
+        ],
         "parameters": [
           {
             "name": "from_at",
@@ -2277,11 +3678,31 @@
             }
           },
           "422": {
-            "description": "Validation Error",
+            "description": "Ошибка валидации входных данных: VALIDATION_ERROR",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Требуется вход в систему: UNAUTHORIZED, SESSION_EXPIRED, USER_INACTIVE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Доступно только администратору: FORBIDDEN",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
                 }
               }
             }
@@ -3504,19 +4925,6 @@
         "type": "object",
         "title": "DeviceUpdate",
         "description": "Изменение карточки. Владелец и статус меняются отдельными операциями."
-      },
-      "HTTPValidationError": {
-        "properties": {
-          "detail": {
-            "items": {
-              "$ref": "#/components/schemas/ValidationError"
-            },
-            "type": "array",
-            "title": "Detail"
-          }
-        },
-        "type": "object",
-        "title": "HTTPValidationError"
       },
       "HealthStatus": {
         "properties": {
@@ -4813,45 +6221,40 @@
         "title": "UserUpdate",
         "description": "Правка карточки. Логин не меняется: это идентификатор входа."
       },
-      "ValidationError": {
+      "ErrorResponse": {
+        "description": "Единый конверт ошибок API.",
         "properties": {
-          "loc": {
-            "items": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "integer"
-                }
-              ]
-            },
-            "type": "array",
-            "title": "Location"
+          "code": {
+            "description": "Стабильный машинный код ошибки",
+            "examples": [
+              "VALIDATION_ERROR"
+            ],
+            "title": "Code",
+            "type": "string"
           },
-          "msg": {
-            "type": "string",
-            "title": "Message"
-          },
-          "type": {
-            "type": "string",
-            "title": "Error Type"
-          },
-          "input": {
-            "title": "Input"
-          },
-          "ctx": {
-            "type": "object",
-            "title": "Context"
+          "message": {
+            "description": "Понятное пользователю сообщение на русском языке",
+            "examples": [
+              "Некорректные данные запроса"
+            ],
+            "title": "Message",
+            "type": "string"
           }
         },
-        "type": "object",
         "required": [
-          "loc",
-          "msg",
-          "type"
+          "code",
+          "message"
         ],
-        "title": "ValidationError"
+        "title": "ErrorResponse",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "SessionCookie": {
+        "type": "apiKey",
+        "description": "Сессионная httpOnly cookie (`qa_session`), устанавливаемая при входе через `POST /auth/login`.",
+        "in": "cookie",
+        "name": "qa_session"
       }
     }
   }

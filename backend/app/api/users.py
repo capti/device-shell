@@ -43,6 +43,7 @@ def list_users(
     _user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[UserRead]:
+    """Список сотрудников со счётчиками закреплённых и взятых на руки устройств."""
     rows = users_service.list_users(db, include_inactive=include_inactive)
     return [_user_read(row) for row in rows]
 
@@ -53,6 +54,7 @@ def read_user(
     _user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> UserRead:
+    """Карточка сотрудника со счётчиками владения и активных выдач."""
     return _user_read(users_service.get_user_row(db, user_id))
 
 
@@ -62,6 +64,7 @@ def create_user(
     _admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> UserRead:
+    """Создание учётной записи сотрудника (доступно только администратору)."""
     user = users_service.create_user(db, **payload.model_dump())
     return _user_read(users_service.get_user_row(db, user.id))
 
@@ -73,6 +76,7 @@ def update_user(
     admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> UserRead:
+    """Обновление профиля и роли сотрудника (доступно только администратору)."""
     user = users_service.get_user(db, user_id)
     users_service.update_user(db, user, payload, actor=admin)
     return _user_read(users_service.get_user_row(db, user_id))
@@ -80,6 +84,7 @@ def update_user(
 
 @router.delete("/{user_id}", status_code=status.HTTP_405_METHOD_NOT_ALLOWED)
 def delete_user(user_id: int, _user: User = Depends(get_current_user)) -> None:
+    """Физическое удаление сотрудника запрещено — используйте деактивацию."""
     reject_deletion("Удаление не поддерживается. Деактивируйте сотрудника")
 
 
@@ -89,6 +94,7 @@ def deactivate_user(
     admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> UserRead:
+    """Деактивация сотрудника с архивацией его устройств (при отсутствии активных выдач)."""
     user = users_service.get_user(db, user_id)
     users_service.deactivate_user(db, user, admin)
     return _user_read(users_service.get_user_row(db, user_id))
@@ -100,6 +106,7 @@ def activate_user(
     _admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> UserRead:
+    """Повторная активация деактивированного сотрудника (только для администратора)."""
     user = users_service.get_user(db, user_id)
     users_service.activate_user(db, user)
     return _user_read(users_service.get_user_row(db, user_id))
@@ -112,5 +119,6 @@ def reset_password(
     admin: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ) -> None:
+    """Сброс пароля сотрудника администратором с отзывом всех его сессий."""
     user = users_service.get_user(db, user_id)
     users_service.set_password(db, user, payload.password, actor=admin)

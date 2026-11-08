@@ -88,6 +88,7 @@ def read_repairs(
     _user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[RepairRead]:
+    """Журнал ремонтов устройства в порядке от новых к старым."""
     devices_service.get_device(db, device_id)
     return _repair_list(db, maintenance.list_repairs(db, device_id))
 
@@ -103,6 +104,7 @@ def start_repair(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> RepairRead:
+    """Отправка активного устройства в ремонт с переводом в статус `repair`."""
     device = devices_service.get_device(db, device_id)
     repair = maintenance.start_repair(db, device, payload, user)
     return _repair_list(db, [repair])[0]
@@ -116,6 +118,7 @@ def finish_repair(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> RepairRead:
+    """Завершение ремонта устройства с возвратом статуса в `active`."""
     device = devices_service.get_device(db, device_id)
     repair = maintenance.finish_repair(
         db, device, repair_id, payload or RepairFinishRequest(), user
@@ -129,6 +132,7 @@ def read_condition_reports(
     _user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> list[ConditionReportRead]:
+    """Список отчётов о состоянии устройства вместе с прикреплёнными фотографиями."""
     devices_service.get_device(db, device_id)
     return _report_list(db, reports_service.list_reports(db, device_id))
 
@@ -144,6 +148,7 @@ def create_condition_report(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> ConditionReportRead:
+    """Добавление отчёта о состоянии устройства держателем, владельцем или администратором."""
     device = devices_service.get_device(db, device_id)
     report = reports_service.submit_report(db, device, payload, user)
     return _report_list(db, [report])[0]

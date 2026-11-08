@@ -18,6 +18,7 @@ from app.config import settings
 from app.errors import register_exception_handlers
 from app.logs import configure_logging
 from app.middleware import OriginCheckMiddleware, RequestLogMiddleware
+from app.openapi import build_openapi
 from app.spa import register_spa
 
 
@@ -28,6 +29,7 @@ def create_app() -> FastAPI:
         version=__version__,
         description="Сайт для учёта тестовых смартфонов",
     )
+    app.openapi = lambda: build_openapi(app)  # type: ignore[method-assign]
     register_exception_handlers(app)
     # Порядок важен: последний добавленный middleware — внешний, поэтому
     # отказы Origin (403) тоже попадают в лог запросов.
