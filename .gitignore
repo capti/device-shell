@@ -8,9 +8,13 @@ __pycache__/
 coverage.xml
 *.egg-info/
 
-# Отчёты Uncle Bob tools (crapper/dryer/mutator)
+# Отчёты и окружение Uncle Bob tools (crapper/dryer/mutator)
 .metrics/
 target/
+.skills/ub-mode/crapper/
+.skills/ub-mode/dryer/
+.skills/ub-mode/mutator/
+.skills/ub-mode/.qa-tools-venv/
 
 # Окружение и данные
 .env

@@ -10,7 +10,7 @@ $env:PYTHONIOENCODING = "utf-8"
 $repoRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..\..\..")
 $backendDir = Join-Path $repoRoot "backend"
 $venvPy = Join-Path $backendDir ".venv\Scripts\python.exe"
-$qaToolsVenv = "D:\repos\.qa-tools-venv"
+$qaToolsVenv = Join-Path $repoRoot ".skills\ub-mode\.qa-tools-venv"
 $qaPy = Join-Path $qaToolsVenv "Scripts\python.exe"
 $qaSitePackages = Join-Path $qaToolsVenv "Lib\site-packages"
 
@@ -21,7 +21,8 @@ if (-not (Test-Path $qaPy)) {
     Write-Error "QA tools venv python not found at $qaPy"
 }
 
-$loopbackCheck = @"
+if ((-not $SkipCoverage) -or (-not $SkipMutator)) {
+    $loopbackCheck = @"
 import socket, sys
 lsock = socket.socket()
 lsock.bind(('127.0.0.1', 0))
@@ -43,10 +44,11 @@ finally:
     lsock.close()
 "@
 
-& $venvPy -c $loopbackCheck
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "Loopback TCP (127.0.0.1) is blocked (likely running inside the Windows no-network sandbox). Run this script with BypassSandbox: true so asyncio/TestClient socket.socketpair() does not deadlock."
-    exit 1
+    & $venvPy -c $loopbackCheck
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Loopback TCP (127.0.0.1) is blocked (likely running inside the Windows no-network sandbox). Run this script with BypassSandbox: true so asyncio/TestClient socket.socketpair() does not deadlock."
+        exit 1
+    }
 }
 
 Push-Location $backendDir

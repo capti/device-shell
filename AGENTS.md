@@ -133,12 +133,12 @@ data/{qa.db, media/}
 | `dryer` | структурные дубли кода |
 | `mutator` | выживаемость тестов: убивают ли они мутации |
 
-Инструменты ставятся **вне проекта**, в `D:\repos`: клоны `crapper`, `dryer`,
-`mutator` и общий venv `D:\repos\.qa-tools-venv`. В проект они не попадают,
-их артефакты (`.metrics/`, `target/`) не коммитятся.
+Инструменты лежат в `.skills/ub-mode/`: клоны `crapper`, `dryer`,
+`mutator` и общий venv `.skills/ub-mode/.qa-tools-venv`. В коммит они и
+их артефакты (`.metrics/`, `target/`) не попадают (добавлены в `.gitignore`).
 
 ```powershell
-$py = "D:\repos\.qa-tools-venv\Scripts\python.exe"
+$py = "D:\repos\qa-test-staff\.skills\ub-mode\.qa-tools-venv\Scripts\python.exe"
 $env:PYTHONIOENCODING = "utf-8"   # справка crapper содержит «CC²», cp1251 падает
 cd backend
 

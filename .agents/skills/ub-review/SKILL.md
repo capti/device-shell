@@ -18,11 +18,11 @@ Runs the complete review suite required by `AGENTS.md` and `ub-mode`:
 
 ## Usage
 
-> **IMPORTANT (Windows Sandbox)**: Always run `run-ub-review.ps1` with `BypassSandbox: true`.
->1. FastAPI `TestClient` (`anyio`/`asyncio`) calls `socket.socketpair()`, which on Windows opens a loopback TCP socket (`127.0.0.1`) that deadlocks inside the no-network sandbox.
->2. The external QA tools virtualenv (`D:\repos\.qa-tools-venv`) is located outside the repository workspace.
+> **IMPORTANT (Windows Sandbox)**: When running `pytest` (coverage or mutator), run `run-ub-review.ps1` with `BypassSandbox: true`:
+> 1. FastAPI `TestClient` (`anyio`/`asyncio`) calls `socket.socketpair()`, which on Windows opens a loopback TCP socket (`127.0.0.1`) that deadlocks inside the no-network sandbox.
+> 2. The QA tools (`crapper`, `dryer`, `mutator`) and their virtualenv live in `.skills/ub-mode/.qa-tools-venv` inside the workspace, so `-SkipCoverage -SkipMutator` (running `ruff`, `crapper`, and `dryer` on existing LCOV) works inside the standard sandbox.
 >
-> `run-ub-review.ps1` includes a 1-second loopback pre-flight check and will abort immediately if accidentally launched inside the no-network sandbox.
+> `run-ub-review.ps1` includes a 1-second loopback pre-flight check whenever `pytest` is needed and aborts immediately if accidentally launched inside the no-network sandbox.
 
 Run the helper script from the repository root:
 
