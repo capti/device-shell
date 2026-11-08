@@ -18,6 +18,12 @@ Runs the complete review suite required by `AGENTS.md` and `ub-mode`:
 
 ## Usage
 
+> **IMPORTANT (Windows Sandbox)**: Always run `run-ub-review.ps1` with `BypassSandbox: true`.
+>1. FastAPI `TestClient` (`anyio`/`asyncio`) calls `socket.socketpair()`, which on Windows opens a loopback TCP socket (`127.0.0.1`) that deadlocks inside the no-network sandbox.
+>2. The external QA tools virtualenv (`D:\repos\.qa-tools-venv`) is located outside the repository workspace.
+>
+> `run-ub-review.ps1` includes a 1-second loopback pre-flight check and will abort immediately if accidentally launched inside the no-network sandbox.
+
 Run the helper script from the repository root:
 
 ```powershell

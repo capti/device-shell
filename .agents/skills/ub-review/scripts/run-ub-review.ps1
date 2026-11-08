@@ -21,6 +21,34 @@ if (-not (Test-Path $qaPy)) {
     Write-Error "QA tools venv python not found at $qaPy"
 }
 
+$loopbackCheck = @"
+import socket, sys
+lsock = socket.socket()
+lsock.bind(('127.0.0.1', 0))
+lsock.listen(1)
+lsock.settimeout(1.0)
+csock = socket.socket()
+csock.setblocking(False)
+try:
+    csock.connect(lsock.getsockname())
+except BlockingIOError:
+    pass
+try:
+    s, _ = lsock.accept()
+    s.close()
+except Exception:
+    sys.exit(1)
+finally:
+    csock.close()
+    lsock.close()
+"@
+
+& $venvPy -c $loopbackCheck
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Loopback TCP (127.0.0.1) is blocked (likely running inside the Windows no-network sandbox). Run this script with BypassSandbox: true so asyncio/TestClient socket.socketpair() does not deadlock."
+    exit 1
+}
+
 Push-Location $backendDir
 try {
     Write-Host "=== [1/5] Running Ruff ===" -ForegroundColor Cyan
