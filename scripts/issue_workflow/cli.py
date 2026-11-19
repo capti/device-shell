@@ -1,4 +1,4 @@
-"""CLI issue-driven workflow: init, status, sync, finish."""
+"""CLI issue-driven workflow: init, status, sync, check, finish."""
 from __future__ import annotations
 
 import argparse
@@ -9,7 +9,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from . import core, github
+from . import core, github, markers
 
 ROOT = Path(__file__).resolve().parents[2]
 MANIFESTS = ROOT / ".tmp" / "issues"
@@ -204,11 +204,15 @@ def cmd_status(args: argparse.Namespace) -> int:
 def cmd_sync(args: argparse.Namespace) -> int:
     manifest = _load_manifest(args.change_id)
     tree = github.get_issue_tree(manifest["repo"], manifest["main_issue"]["number"])
+    checked = core.is_checklist_complete(
+        tree.main_body, markers.CRITERIA_START, markers.CRITERIA_END
+    )
     body = core.build_main_body(
         args.change_id,
         manifest["criteria"],
         manifest["repo"],
         sub_issues=_tree_dicts(tree),
+        criteria_checked=checked,
     )
     number = manifest["main_issue"]["number"]
     github.edit_issue_body(number, body)
@@ -248,10 +252,65 @@ def cmd_finish(args: argparse.Namespace) -> int:
     return 0
 
 
+def _marker_task(body: str) -> str | None:
+    try:
+        return core.parse_markers(body).task_id
+    except core.MarkerError:
+        return None
+
+
+def _check_task(manifest: dict[str, Any], task_id: str) -> int:
+    tree = github.get_issue_tree(manifest["repo"], manifest["main_issue"]["number"])
+    match = next((sub for sub in tree.subs if _marker_task(sub.body) == task_id), None)
+    if match is None:
+        raise SystemExit(f"sub-issue с task={task_id} не найден")
+    body = core.mark_checklist(
+        match.body, markers.ACCEPTANCE_START, markers.ACCEPTANCE_END
+    )
+    github.edit_issue_body(match.number, body)
+    print(f"Критерии приёмки sub-issue #{match.number} отмечены")
+    return 0
+
+
+def _check_main(manifest: dict[str, Any]) -> int:
+    tree = github.get_issue_tree(manifest["repo"], manifest["main_issue"]["number"])
+    problems: list[str] = []
+    if len(tree.subs) != len(manifest["subs"]):
+        problems.append("число sub-issues не совпадает с манифестом")
+    for sub in tree.subs:
+        if sub.state != "CLOSED":
+            problems.append(f"#{sub.number}: state={sub.state}, ожидалось CLOSED")
+        if not core.is_checklist_complete(
+            sub.body, markers.ACCEPTANCE_START, markers.ACCEPTANCE_END
+        ):
+            problems.append(f"#{sub.number}: критерии приёмки не отмечены")
+    if problems:
+        print("Невозможно отметить главный чеклист:")
+        for problem in problems:
+            print(f"  - {problem}")
+        return 1
+    body = core.mark_checklist(
+        tree.main_body, markers.CRITERIA_START, markers.CRITERIA_END
+    )
+    github.edit_issue_body(manifest["main_issue"]["number"], body)
+    print("Критерии главного issue отмечены")
+    return 0
+
+
+def cmd_check(args: argparse.Namespace) -> int:
+    if bool(args.task) == bool(args.main):
+        raise SystemExit("Укажите ровно один из --task или --main")
+    manifest = _load_manifest(args.change_id)
+    if args.task:
+        return _check_task(manifest, args.task)
+    return _check_main(manifest)
+
+
 SUBCOMMANDS: dict[str, Callable[[argparse.Namespace], int]] = {
     "init": cmd_init,
     "status": cmd_status,
     "sync": cmd_sync,
+    "check": cmd_check,
     "finish": cmd_finish,
 }
 
@@ -270,6 +329,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             command.add_argument("--repo")
         if name == "status":
             command.add_argument("--skip-checks", action="store_true")
+        if name == "check":
+            command.add_argument("--task")
+            command.add_argument("--main", action="store_true")
         if name == "finish":
             command.add_argument("--apply", action="store_true")
         command.set_defaults(handler=handler)

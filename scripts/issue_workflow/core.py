@@ -26,6 +26,8 @@ __all__ = [
     "build_sub_body",
     "evaluate_gate",
     "format_report",
+    "is_checklist_complete",
+    "mark_checklist",
     "parse_checklist",
     "parse_markers",
     "parse_task_specs",
@@ -155,6 +157,7 @@ def build_main_body(
     repo: str,
     summary: str = "",
     sub_issues: Sequence[dict] = (),
+    criteria_checked: bool = False,
 ) -> str:
     parts = [
         _render_marker("main", change_id),
@@ -169,7 +172,10 @@ def build_main_body(
             "",
             templates.SECTION_CRITERIA,
             markers.CRITERIA_START,
-            *(_check_line(item) for item in criteria),
+            *(
+                f"- [{'x' if criteria_checked else ' '}] {item}"
+                for item in criteria
+            ),
             markers.CRITERIA_END,
             "",
             templates.SECTION_SUB_ISSUES,
@@ -229,6 +235,22 @@ def _checklist_state(body: str, start: str, end: str) -> bool:
     except MarkerError:
         return False
     return bool(items) and all(item.checked for item in items)
+
+
+def is_checklist_complete(body: str, start: str, end: str) -> bool:
+    """Публичная проверка: все пункты между маркерами отмечены."""
+    return _checklist_state(body, start, end)
+
+
+def mark_checklist(body: str, start: str, end: str) -> str:
+    """Отметить пункты только между маркерами, не меняя остальной текст."""
+    begin = body.find(start)
+    finish = body.find(end)
+    if begin == -1 or finish == -1 or finish <= begin:
+        raise MarkerError("missing or misordered checklist markers")
+    section_start = begin + len(start)
+    updated = body[section_start:finish].replace("- [ ]", "- [x]")
+    return body[:section_start] + updated + body[finish:]
 
 
 def _sub_reasons(sub_issues: Sequence[dict]) -> list[str]:
