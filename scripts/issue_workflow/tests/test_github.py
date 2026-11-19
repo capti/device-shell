@@ -37,6 +37,23 @@ def test_run_raises_github_error_on_failure(monkeypatch):
         raise AssertionError("ожидался GitHubError")
 
 
+def test_graphql_unwraps_data_envelope(monkeypatch):
+    payload = '{"data":{"repository":{"issue":{"number":2}}}}'
+    monkeypatch.setattr(github, "run", lambda args: payload)
+    assert github._graphql("query", {}) == {"repository": {"issue": {"number": 2}}}
+
+
+def test_graphql_raises_on_errors(monkeypatch):
+    payload = '{"errors":[{"message":"Not Found"}]}'
+    monkeypatch.setattr(github, "run", lambda args: payload)
+    try:
+        github._graphql("query", {})
+    except github.GitHubError as exc:
+        assert "Not Found" in str(exc)
+    else:
+        raise AssertionError("ожидался GitHubError")
+
+
 def test_get_issue_tree_follows_pagination(monkeypatch):
     def node(number):
         return {

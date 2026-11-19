@@ -107,7 +107,13 @@ def _graphql(query: str, variables: dict[str, str]) -> dict:
     for key, value in variables.items():
         args.extend(["-F", f"{key}={value}"])
     args.extend(["-f", f"query={query}"])
-    return json.loads(run(args))
+    payload = json.loads(run(args))
+    data = payload.get("data")
+    if data is None:
+        errors = payload.get("errors", [])
+        messages = "; ".join(str(item.get("message", item)) for item in errors)
+        raise GitHubError(f"GraphQL: {messages or 'пустой ответ'}")
+    return data
 
 
 def get_issue_tree(repo: str, main_number: int) -> IssueTree:
