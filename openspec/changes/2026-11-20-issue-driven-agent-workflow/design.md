@@ -47,9 +47,11 @@
   issue, номера sub-issues, ветку `change/<id>` и repo. `.tmp/` добавляется в
   `.gitignore`: манифест — рабочее состояние, а не артефакт репозитория.
 - **Двухфазное завершение.** `status` и `finish` без `--apply` только читают и
-  печатают отчёт (dry-run). `finish --apply` выполняет закрытие главного issue,
-  `git push -u origin <branch>` и `gh pr create` с `Implements #N` (не `Closes`,
-  чтобы не закрывать issue повторно при merge). `--apply` вызывается агентом
+  печатают отчёт (dry-run). `finish --apply` выполняет
+  `git push -u origin <branch>` и `gh pr create` с `Closes #N`: GitHub сам связывает
+  PR с issue в разделе Development и закрывает issue при мерже в default branch.
+  Прямого `gh issue close` больше нет — иначе issue закрывался бы раньше мержа.
+  `--apply` вызывается агентом
   только после явного OK пользователя в чате — это сохраняет правило `AGENTS.md`.
 - **Явная отметка критериев.** Чекбоксы не выводятся автоматически из `state`:
   сабагент сам вызывает `check --task <id>` после выполнения критериев приёмки,

@@ -12,6 +12,12 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
+DEFAULT_BRANCH_QUERY = """
+query($owner:String!,$name:String!) {
+  repository(owner:$owner, name:$name) { defaultBranchRef { name } }
+}
+"""
+
 GRAPHQL_TREE = """
 query($owner:String!,$name:String!,$number:Int!,$after:String) {
   repository(owner:$owner, name:$name) {
@@ -100,6 +106,16 @@ def create_issue(
         args.extend(["--parent", str(parent)])
     url = run(args, input_text=body)
     return IssueRef(int(url.rstrip("/").rsplit("/", 1)[-1]), url, title)
+
+
+def get_default_branch(repo: str) -> str:
+    """Вернуть default branch репозитория — только туда действует Closes #N."""
+    owner, name = repo.split("/", 1)
+    data = _graphql(DEFAULT_BRANCH_QUERY, {"owner": owner, "name": name})
+    ref = data["repository"]["defaultBranchRef"]
+    if not ref or not ref["name"]:
+        raise GitHubError(f"не удалось определить default branch для {repo}")
+    return ref["name"]
 
 
 def _graphql(query: str, variables: dict[str, str]) -> dict:

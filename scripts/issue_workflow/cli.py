@@ -239,14 +239,16 @@ def cmd_finish(args: argparse.Namespace) -> int:
     number = manifest["main_issue"]["number"]
     branch = manifest["branch"]
     github.push_branch(branch)
+    base = github.get_default_branch(manifest["repo"])
     pr_url = github.create_pr(
         f"[{args.change_id}] Issue-driven workflow",
-        f"Implements #{number}\n\n{core.format_report(repeat)}",
+        f"Closes #{number}\n\n{core.format_report(repeat)}",
         branch,
+        base,
     )
-    github.close_issue(number, "issue-driven workflow: гейт пройден")
-    manifest["closed_at"] = datetime.now(UTC).isoformat()
+    manifest["linked_at"] = datetime.now(UTC).isoformat()
     manifest["pr_url"] = pr_url
+    manifest["pr_base"] = base
     _save_manifest(args.change_id, manifest)
     print(f"PR: {pr_url}")
     return 0

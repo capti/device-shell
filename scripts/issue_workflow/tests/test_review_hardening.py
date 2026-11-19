@@ -47,8 +47,13 @@ def test_finish_rechecks_local_checks_before_apply(monkeypatch):
     monkeypatch.setattr(cli, "_local_checks", checks)
     monkeypatch.setattr(cli, "_gate", gate)
     monkeypatch.setattr(cli.github, "push_branch", lambda *a, **k: None)
+    monkeypatch.setattr(cli.github, "get_default_branch", lambda repo: "main")
     monkeypatch.setattr(cli.github, "create_pr", lambda *a, **k: "url")
-    monkeypatch.setattr(cli.github, "close_issue", lambda *a, **k: None)
+    monkeypatch.setattr(
+        cli.github,
+        "close_issue",
+        lambda *a, **k: pytest.fail("issue должен закрываться только при мерже PR"),
+    )
     monkeypatch.setattr(cli, "_save_manifest", lambda *a, **k: None)
 
     assert cli.main(["finish", "--change-id", "demo", "--apply"]) == 0

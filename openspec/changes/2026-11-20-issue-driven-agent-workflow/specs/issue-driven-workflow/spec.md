@@ -72,8 +72,9 @@ SHALL быть причиной отказа с указанием конкре�
 Система SHALL NOT закрывать главный issue, пушить ветку или создавать PR без
 явного флага `--apply` и подтверждения пользователя. Команда `finish` без
 `--apply` SHALL работать в режиме только для чтения. PR SHALL ссылаться на главный
-issue через `Implements #N` и SHALL NOT содержать `Closes #N`. Авто-merge и пуш в
-`main` SHALL NOT выполняться.
+issue через `Closes #N`. Команда `finish` SHALL NOT закрывать issue вручную:
+закрытие выполняется GitHub только после мержа связанного PR в default branch.
+Авто-merge и пуш в `main` SHALL NOT выполняться.
 
 #### Scenario: Finish без подтверждения
 
@@ -84,6 +85,23 @@ issue через `Implements #N` и SHALL NOT содержать `Closes #N`. А
 
 - **WHEN** между проверкой и `--apply` состояние sub-issue изменилось
 - **THEN** `finish` повторно проверяет гейт и прерывается до каких-либо записей
+
+### Requirement: Связь PR с issue
+
+PR SHALL создаваться в default branch репозитория, а его тело SHALL содержать
+`Closes #<main>`. GitHub связывает такой PR с issue в разделе Development и
+закрывает issue при мерже. Default branch SHALL определяться через GraphQL, а не
+предполагаться равным `main`.
+
+#### Scenario: Создание связанного PR
+
+- **WHEN** выполнена команда `finish --apply`
+- **THEN** создаётся PR в default branch с `Closes #N`, а главный issue остаётся открытым
+
+#### Scenario: Мерж связанного PR
+
+- **WHEN** PR с `Closes #N` смержен в default branch
+- **THEN** GitHub закрывает главный issue и показывает PR в его разделе Development
 
 ### Requirement: Ограничения пуша
 
