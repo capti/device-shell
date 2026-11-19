@@ -33,3 +33,6 @@ frontend/dist/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Локальное состояние агентов
+.tmp/
