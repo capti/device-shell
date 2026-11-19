@@ -4,7 +4,7 @@
 и где проходит граница между «данными из issue» и «разрешением на публикацию».
 Адресат — оркестратор и сабагенты: им важнее понять причину правила, чем список
 команд. Сами команды — тонкая обёртка над `gh`/`git`; контракт описан в
-`openspec/changes/2026-11-20-issue-driven-agent-workflow/specs/issue-driven-workflow/spec.md`.
+`openspec/specs/issue-driven-workflow/spec.md`.
 
 ## Зачем
 
@@ -100,7 +100,8 @@ GraphQL, а не на произвольный текст.
 ## Change
 
 Issue-ориентированное исполнение OpenSpec change. Источник правды —
-`openspec/changes/2026-11-20-issue-driven-agent-workflow/`.
+`openspec/specs/issue-driven-workflow/spec.md`; история решений — в
+`openspec/changes/archive/2026-11-20-issue-driven-agent-workflow/`.
 
 ## Ветка
 
@@ -261,8 +262,8 @@ GraphQL отдаёт не более 100 узлов на страницу; `endC
 
 ## Ссылки
 
-- Proposal: `openspec/changes/2026-11-20-issue-driven-agent-workflow/proposal.md`
-- Design (решения и риски): `openspec/changes/2026-11-20-issue-driven-agent-workflow/design.md`
-- Tasks (источник идентификаторов sub-issues): `openspec/changes/2026-11-20-issue-driven-agent-workflow/tasks.md`
-- Spec: `openspec/changes/2026-11-20-issue-driven-agent-workflow/specs/issue-driven-workflow/spec.md`
+- Spec (источник правды): `openspec/specs/issue-driven-workflow/spec.md`
+- Proposal: `openspec/changes/archive/2026-11-20-issue-driven-agent-workflow/proposal.md`
+- Design (решения и риски): `openspec/changes/archive/2026-11-20-issue-driven-agent-workflow/design.md`
+- Tasks (источник идентификаторов sub-issues): `openspec/changes/archive/2026-11-20-issue-driven-agent-workflow/tasks.md`
 - Конвенция репозитория: `AGENTS.md`
