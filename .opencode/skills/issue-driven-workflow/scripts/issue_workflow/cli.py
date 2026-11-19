@@ -11,7 +11,16 @@ from typing import Any
 
 from . import core, github, markers
 
-ROOT = Path(__file__).resolve().parents[2]
+
+def _find_repo_root() -> Path:
+    """Найти корень репозитория независимо от расположения скилла."""
+    for parent in Path(__file__).resolve().parents:
+        if (parent / ".git").exists():
+            return parent
+    raise SystemExit("корень git-репозитория не найден")
+
+
+ROOT = _find_repo_root()
 MANIFESTS = ROOT / ".tmp" / "issues"
 BACKEND = ROOT / "backend"
 CHECKS: tuple[tuple[str, tuple[str, ...], Path], ...] = (

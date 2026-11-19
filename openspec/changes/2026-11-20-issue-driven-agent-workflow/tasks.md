@@ -9,7 +9,7 @@
 ## 2. Чистая логика
 
 - [x] 2.1 Реализовать разбор маркеров `issue-workflow:v1` и чеклистов в
-  `scripts/issue_workflow/core.py`; проверить юнит-тестом на корректном и
+  `.opencode/skills/issue-driven-workflow/scripts/issue_workflow/core.py`; проверить юнит-тестом на корректном и
   повреждённом теле.
 - [x] 2.2 Реализовать построение тел главного issue и sub-issue с полным процессом
   от начала до конца; проверить, что все обязательные секции присутствуют.
@@ -21,7 +21,7 @@
 ## 3. Интеграция с GitHub
 
 - [x] 3.1 Реализовать тонкие обёртки над `gh` и `git` в
-  `scripts/issue_workflow/github.py` без выполнения текста из issue; проверить
+  `.opencode/skills/issue-driven-workflow/scripts/issue_workflow/github.py` без выполнения текста из issue; проверить
   моком вызовов.
 - [x] 3.2 Реализовать команду `init` с `--dry-run`, создающую главный issue и
   sub-issues и записывающую манифест; проверить, что dry-run не делает записей.
@@ -33,14 +33,14 @@
 
 ## 4. Конвенция
 
-- [x] 4.1 Написать `docs/issue-driven-workflow.md` с WHY, протоколом, соответствием
+- [x] 4.1 Написать `.opencode/skills/issue-driven-workflow/docs/protocol.md` с WHY, протоколом, соответствием
   карточке `team-agent-orchestration` и правилами безопасности.
 - [x] 4.2 Добавить короткий раздел со ссылкой в `AGENTS.md` и игнор `.tmp/` в
   `.gitignore`; проверить, что `git status` не показывает session-файлы.
 
 ## 5. Итоговая проверка
 
-- [x] 5.1 Прогнать `uv run --with pytest pytest scripts/issue_workflow/tests -q`,
+- [x] 5.1 Прогнать `uv run --with pytest pytest .opencode/skills/issue-driven-workflow/scripts/issue_workflow/tests -q`,
   линтер скриптов и `openspec validate --all --strict`; исправить ошибки change.
 - [x] 5.2 Выполнить smoke-проверку на фикстурах: `init --dry-run` и `status` без
   реальных записей в GitHub; убедиться, что гейт отказывает при незакрытом

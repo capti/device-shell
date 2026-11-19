@@ -18,11 +18,11 @@ OpenSpec, каждый сабагент получал отдельный sub-is
 - Ввести machine-читаемые маркеры в телах issue: мета-маркер `issue-workflow:v1`
   и пары маркеров вокруг чеклистов критериев. Произвольный текст issue является
   данными и никогда не выполняется.
-- Добавить CLI `scripts/issue_workflow/` с командами `init`, `status`, `sync`,
+- Добавить CLI `.opencode/skills/issue-driven-workflow/scripts/issue_workflow/` с командами `init`, `status`, `sync`,
   `finish`: создание связанных issue из артефактов change, чтение статусов через
   GraphQL, синхронизация чеклиста, двухфазное закрытие с явным `--apply`.
 - Добавить конвенцию в `AGENTS.md` и подробный протокол в
-  `docs/issue-driven-workflow.md`, связывающий issue с карточкой
+  `.opencode/skills/issue-driven-workflow/docs/protocol.md`, связывающий issue с карточкой
   `team-agent-orchestration` (owner, scope, acceptance, merge_gate, handoff).
 - Добавить юнит-тесты на разбор маркеров, построение тел issue и таблицу
   истинности гейта.
@@ -52,7 +52,7 @@ OpenSpec, каждый сабагент получал отдельный sub-is
 
 ## Impact
 
-- Новые файлы: `scripts/issue_workflow/**`, `docs/issue-driven-workflow.md`,
+- Новые файлы: `.opencode/skills/issue-driven-workflow/scripts/issue_workflow/**`, `.opencode/skills/issue-driven-workflow/docs/protocol.md`,
   `openspec/specs/issue-driven-workflow/spec.md`.
 - Изменения: `AGENTS.md` (короткий раздел и ссылка), `.gitignore` (игнор `.tmp/`).
 - Backend, frontend, зависимости и схема БД не затрагиваются.
