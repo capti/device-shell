@@ -5,7 +5,6 @@ from sqlalchemy.orm import Session
 
 from app.api.cookies import clear_session_cookie, set_session_cookie
 from app.api.deps import get_current_user
-from app.clock import now_local
 from app.config import settings
 from app.db import get_db
 from app.errors import AppError
@@ -90,9 +89,7 @@ def login(
     login_rate_limiter.reset(key)
     token, _session = create_session(db, user, request.headers.get("user-agent"))
 
-    user.last_login_at = now_local()
-    db.commit()
-    db.refresh(user)
+    users_service.note_login(db, user)
 
     _record_attempt(request, username=user.username, success=True, user_id=user.id)
 

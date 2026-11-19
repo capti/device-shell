@@ -42,6 +42,8 @@ class Checkout(Base):
         ),
         Index("ix_checkouts_device_id", "device_id"),
         Index("ix_checkouts_user_id", "user_id"),
+        Index("ix_checkouts_taken_at_id", "taken_at", "id"),
+        Index("ix_checkouts_returned_at", "returned_at"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)

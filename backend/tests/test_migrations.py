@@ -49,6 +49,22 @@ def _triggers(connection: sqlite3.Connection) -> set[str]:
     }
 
 
+def _indexes(connection: sqlite3.Connection) -> set[str]:
+    return {
+        row[0]
+        for row in connection.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'index'"
+        )
+    }
+
+
+PERFORMANCE_INDEXES = {
+    "ix_device_events_created_at",
+    "ix_checkouts_taken_at_id",
+    "ix_checkouts_returned_at",
+}
+
+
 def test_upgrade_head_and_downgrade_base(tmp_path: Path) -> None:
     database = tmp_path / "migration.db"
     env = {**os.environ, "DATABASE_URL": f"sqlite:///{database.as_posix()}"}
@@ -84,3 +100,30 @@ def test_upgrade_head_and_downgrade_base(tmp_path: Path) -> None:
 
     _run_alembic("downgrade", "base", env=env)
     assert not (DOMAIN_TABLES & _tables(database))
+
+
+def test_performance_indexes_created_and_dropped(tmp_path: Path) -> None:
+    database = tmp_path / "migration.db"
+    env = {**os.environ, "DATABASE_URL": f"sqlite:///{database.as_posix()}"}
+
+    _run_alembic("upgrade", "head", env=env)
+    with sqlite3.connect(database) as connection:
+        indexes = _indexes(connection)
+    assert PERFORMANCE_INDEXES <= indexes
+
+    # Откат на предыдущую ревизию удаляет только три новых индекса.
+    _run_alembic("downgrade", "0003", env=env)
+    with sqlite3.connect(database) as connection:
+        indexes = _indexes(connection)
+        index_sql = connection.execute(
+            "SELECT sql FROM sqlite_master WHERE name = 'uq_checkouts_active_device'"
+        ).fetchone()[0]
+        triggers = _triggers(connection)
+    assert not (PERFORMANCE_INDEXES & indexes)
+    assert "returned_at IS NULL" in index_sql
+    assert {
+        "trg_device_events_no_update",
+        "trg_device_events_no_delete",
+        "trg_login_events_no_update",
+        "trg_login_events_no_delete",
+    } <= triggers

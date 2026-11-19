@@ -1,13 +1,17 @@
 """Фотографии устройства: загрузка, чтение, удаление, лимиты и права."""
 
+import struct
+import zlib
+from contextlib import contextmanager
 from io import BytesIO
 
 import pytest
 from fastapi.testclient import TestClient
 from helpers import checkout, create_device, login_as, register_user
 from PIL import Image
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
+from starlette.datastructures import UploadFile
 
 import app.services.photos as photos_service
 from app.config import settings
@@ -15,6 +19,98 @@ from app.errors import AppError
 from app.models import DeviceEvent, DevicePhoto
 
 MAX_PHOTO_BYTES = 10 * 1024 * 1024
+
+
+class _ReadRecorder:
+    """Обертка над файлом загрузки: запоминает, как приложение его читало."""
+
+    def __init__(self, wrapped) -> None:
+        self._wrapped = wrapped
+        self.calls: list[tuple[tuple, dict]] = []
+
+    def read(self, *args, **kwargs):
+        self.calls.append((args, kwargs))
+        return self._wrapped.read(*args, **kwargs)
+
+    def __getattr__(self, name):
+        return getattr(self._wrapped, name)
+
+
+@contextmanager
+def record_upload_reads():
+    """Перехватывает чтение содержимого multipart-файлов кодом приложения.
+
+    Проверка объёма, количества и прав обязана происходить ДО чтения байтов:
+    если файл прочитан целиком, «отказ» уже не защищает от исчерпания памяти.
+    """
+    original_init = UploadFile.__init__
+    recorders: list[_ReadRecorder] = []
+
+    def patched_init(self, *args, **kwargs) -> None:
+        original_init(self, *args, **kwargs)
+        recorder = _ReadRecorder(self.file)
+        self.file = recorder
+        recorders.append(recorder)
+
+    UploadFile.__init__ = patched_init
+    try:
+        yield recorders
+    finally:
+        UploadFile.__init__ = original_init
+
+
+def solid_png(width: int, height: int, rgb: tuple[int, int, int]) -> bytes:
+    """Крошечный по объёму PNG с огромным числом пикселей (бомба сжатия).
+
+    Сканирующие строки сжимаются по одной, поэтому тест не выделяет сотни
+    мегабайт: в памяти одновременно только одна строка и сжатый поток.
+    """
+
+    def chunk(tag: bytes, data: bytes) -> bytes:
+        return (
+            struct.pack(">I", len(data))
+            + tag
+            + data
+            + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
+        )
+
+    header = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    row = b"\x00" + bytes(rgb) * width
+    compressor = zlib.compressobj(level=1)
+    compressed = bytearray()
+    for _ in range(height):
+        compressed.extend(compressor.compress(row))
+    compressed.extend(compressor.flush())
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", header)
+        + chunk(b"IDAT", bytes(compressed))
+        + chunk(b"IEND", b"")
+    )
+
+
+def photo_count(db: Session, device_id: int) -> int:
+    return db.scalar(
+        select(func.count())
+        .select_from(DevicePhoto)
+        .where(DevicePhoto.device_id == device_id)
+    )
+
+
+def photo_added_count(db: Session, device_id: int) -> int:
+    return db.scalar(
+        select(func.count())
+        .select_from(DeviceEvent)
+        .where(
+            DeviceEvent.device_id == device_id,
+            DeviceEvent.type == "photo_added",
+        )
+    )
+
+
+def no_files_left(device_id: int) -> bool:
+    directory = photos_service._device_dir(device_id)
+    return not directory.exists() or not any(directory.iterdir())
 
 
 def image_bytes(fmt: str = "JPEG", *, with_exif: bool = False) -> bytes:
@@ -528,8 +624,162 @@ def test_media_files_served_without_session(
     assert response.headers["content-type"].startswith("image/")
 
 
+# --- Регрессионные тесты hardening-а загрузки (change backend-review-hardening) ---
 
 
+def test_upload_rejects_oversized_file_without_buffering_it(
+    client: TestClient, make_user, db: Session
+) -> None:
+    """Файл больше лимита отклоняется, не прочитав всё содержимое в память."""
+    login_as(client, register_user(make_user, username="owner"))
+    device = create_device(client)
+    oversized = b"x" * (MAX_PHOTO_BYTES + 1)
+
+    with record_upload_reads() as recorders:
+        result = upload(
+            client,
+            device["id"],
+            [("huge.jpg", oversized, "image/jpeg")],
+        )
+
+    assert result["status"] == 422, result["body"]
+    assert result["body"]["code"] == "PHOTO_TOO_LARGE"
+    assert "10 МБ" in result["body"]["message"]
+    assert photo_count(db, device["id"]) == 0
+    assert no_files_left(device["id"])
+    # read() без размера (-1) читает всё тело в RAM; допустим только положительный,
+    # ограниченный размер порции (иначе проверка не защищает от OOM).
+    for recorder in recorders:
+        for args, _kwargs in recorder.calls:
+            assert args and 0 < args[0] <= MAX_PHOTO_BYTES + 1, args
+
+
+def test_upload_rejects_batch_over_limit_without_reading_files(
+    client: TestClient, make_user, db: Session
+) -> None:
+    """Пачка из 6 файлов на пустом устройстве отклоняется до чтения байтов."""
+    login_as(client, register_user(make_user, username="owner"))
+    device = create_device(client)
+    batch = [
+        (f"p{index}.jpg", image_bytes(), "image/jpeg") for index in range(6)
+    ]
+
+    with record_upload_reads() as recorders:
+        result = upload(client, device["id"], batch)
+
+    assert result["status"] == 422, result["body"]
+    assert result["body"]["code"] == "PHOTO_LIMIT"
+    assert photo_count(db, device["id"]) == 0
+    assert no_files_left(device["id"])
+    # Число файлов известно из запроса: читать содержимое перед отказом не нужно.
+    assert all(not recorder.calls for recorder in recorders), [
+        recorder.calls for recorder in recorders
+    ]
+
+
+def test_upload_rejects_pixel_bomb_with_unsupported_format(
+    client: TestClient, make_user, db: Session
+) -> None:
+    """Небольшой по объёму PNG с 36 Мпк не должен ронять обработчик."""
+    login_as(client, register_user(make_user, username="owner"))
+    device = create_device(client)
+    bomb = solid_png(6000, 6000, (10, 20, 30))
+    assert len(bomb) < MAX_PHOTO_BYTES
+
+    result = upload(client, device["id"], [("bomb.png", bomb, "image/png")])
+
+    assert result["status"] == 422, result["body"]
+    assert result["body"]["code"] == "UNSUPPORTED_FORMAT"
+    assert photo_count(db, device["id"]) == 0
+    assert no_files_left(device["id"])
+
+
+def test_upload_accepts_image_just_under_pixel_limit(
+    client: TestClient, make_user, db: Session
+) -> None:
+    """Граничное изображение ниже лимита пикселей принимается (design.md)."""
+    login_as(client, register_user(make_user, username="owner"))
+    device = create_device(client)
+    image = solid_png(4999, 4000, (30, 40, 50))  # 19 996 000 < 20 000 000
+    assert len(image) < MAX_PHOTO_BYTES
+
+    result = upload(client, device["id"], [("edge.png", image, "image/png")])
+
+    assert result["status"] == 201, result["body"]
+    assert photo_count(db, device["id"]) == 1
+
+
+def test_read_bounded_rejects_oversized_file_when_size_unavailable(
+    client: TestClient, make_user, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Fallback-чтение порциями тоже отклоняет файл больше 10 МБ."""
+    login_as(client, register_user(make_user, username="owner"))
+    device = create_device(client)
+    oversized = b"x" * (MAX_PHOTO_BYTES + 1)
+
+    # Заставляем _validate_batch не знать размер и проверять байты порциями.
+    monkeypatch.setattr(photos_service, "_validate_batch", lambda files: None)
+
+    with record_upload_reads() as recorders:
+        result = upload(
+            client,
+            device["id"],
+            [("huge.jpg", oversized, "image/jpeg")],
+        )
+
+    assert result["status"] == 422, result["body"]
+    assert result["body"]["code"] == "PHOTO_TOO_LARGE"
+    reads = [args for recorder in recorders for args, _ in recorder.calls]
+    assert reads, "порционное чтение должно было хотя бы один раз обратиться к файлу"
+    for args in reads:
+        assert 0 < args[0] <= MAX_PHOTO_BYTES + 1, args
+
+
+def test_unauthorized_upload_is_rejected_before_reading_file(
+    client: TestClient, make_user, db: Session
+) -> None:
+    """Чужое устройство: 403 без чтения байтов и без следов на диске."""
+    login_as(client, register_user(make_user, username="owner"))
+    stranger = register_user(make_user, username="stranger")
+    device = create_device(client)
+    client.cookies.clear()
+    login_as(client, stranger)
+
+    with record_upload_reads() as recorders:
+        result = upload(
+            client, device["id"], [("p.jpg", image_bytes(), "image/jpeg")]
+        )
+
+    assert result["status"] == 403, result["body"]
+    assert result["body"]["code"] == "FORBIDDEN"
+    assert photo_count(db, device["id"]) == 0
+    assert no_files_left(device["id"])
+    # Авторизация дешевле чтения файла: чужие байты вообще не должны читаться.
+    assert all(not recorder.calls for recorder in recorders), [
+        recorder.calls for recorder in recorders
+    ]
+
+
+def test_photo_row_and_event_are_rolled_back_together(
+    client: TestClient, make_user, db: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Инвариант 9: строка фото и событие живут в одной транзакции."""
+    login_as(client, register_user(make_user, username="owner"))
+    device = create_device(client)
+    original_record_event = photos_service.record_event
+
+    def record_then_fail(*args, **kwargs):
+        original_record_event(*args, **kwargs)
+        raise RuntimeError("имитация сбоя после записи события")
+
+    monkeypatch.setattr(photos_service, "record_event", record_then_fail)
+
+    with pytest.raises(RuntimeError, match="имитация сбоя"):
+        upload(client, device["id"], [("p.jpg", image_bytes(), "image/jpeg")])
+
+    assert photo_count(db, device["id"]) == 0
+    assert photo_added_count(db, device["id"]) == 0
+    assert no_files_left(device["id"])
 
 
 

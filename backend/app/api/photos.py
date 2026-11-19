@@ -1,13 +1,11 @@
 """Эндпоинты фотографий устройства: загрузка, список, удаление."""
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile, status
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user
 from app.api.serializers import user_brief, users_by_id
 from app.db import get_db
-from app.errors import AppError
 from app.models import DevicePhoto, User
 from app.schemas.photos import PhotoRead
 from app.services import devices as devices_service
@@ -47,7 +45,11 @@ def upload_photos(
 ) -> list[PhotoRead]:
     """Загрузка фотографий устройства (до 5 штук на устройство, до 10 МБ каждая, JPEG/PNG/WebP)."""
     device = devices_service.get_device(db, device_id)
-    payloads = [file.file.read() for file in files]
+    # Сначала права, состояние устройства и лимиты — ни одного .read() до них.
+    photos_service.check_upload_preconditions(
+        db, device, user, file_count=len(files), report_id=report_id
+    )
+    payloads = photos_service.read_uploads(files)
     photos = photos_service.upload_photos(db, device, user, payloads, report_id)
     return _photo_list(db, photos)
 
@@ -70,7 +72,4 @@ def delete_photo(
     db: Session = Depends(get_db),
 ) -> None:
     """Удаление фотографии устройства её автором, владельцем устройства или администратором."""
-    photo = db.scalar(select(DevicePhoto).where(DevicePhoto.id == photo_id))
-    if photo is None:
-        raise AppError("NOT_FOUND", "Фото не найдено", 404)
-    photos_service.delete_photo(db, photo, user)
+    photos_service.delete_photo(db, photos_service.get_photo(db, photo_id), user)

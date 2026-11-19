@@ -177,3 +177,41 @@ def test_audit_events_rejects_non_admin(client: TestClient, make_user) -> None:
         "code": "FORBIDDEN",
         "message": "Доступ к журналу аудита только для администраторов",
     }
+
+
+def test_audit_events_with_equal_timestamps_order_by_descending_id(
+    client: TestClient, make_user, make_device, db: Session
+) -> None:
+    """При равном времени порядок детерминирован: id по убыванию, без «дрожания»."""
+    actor = register_user(make_user, username="actor")
+    device = make_device(owner=actor, inventory_no="QA-PH-001")
+    same_moment = now_local().replace(minute=0, second=0, microsecond=0)
+    created = [
+        _add_event(
+            db,
+            device,
+            actor,
+            created_at=same_moment,
+            payload={"seq": index, "marker": "tie-probe"},
+        )
+        for index in range(4)
+    ]
+    login_as(client, register_user(make_user, username="admin", role="admin"))
+
+    def probe_ids() -> list[int]:
+        body = client.get("/audit/events").json()
+        return [
+            item["event_id"]
+            for item in body["events"]
+            if (item["payload"] or {}).get("marker") == "tie-probe"
+        ]
+
+    first = probe_ids()
+    second = probe_ids()
+
+    expected = [event.id for event in reversed(created)]
+    assert first == expected
+    assert second == expected
+
+
+

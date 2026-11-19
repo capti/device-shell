@@ -30,6 +30,14 @@ def get_user_by_username(db: Session, username: str) -> User | None:
     return db.scalar(select(User).where(User.username == username.strip()))
 
 
+def note_login(db: Session, user: User) -> User:
+    """Отмечает успешный вход: обновляет `last_login_at` и фиксирует в БД."""
+    user.last_login_at = now_local()
+    db.commit()
+    db.refresh(user)
+    return user
+
+
 def _ensure_password_strength(password: str) -> None:
     if len(password) < MIN_PASSWORD_LENGTH:
         raise AppError(

@@ -14,6 +14,7 @@ class DeviceEvent(Base):
     __tablename__ = "device_events"
     __table_args__ = (
         Index("ix_device_events_device_created", "device_id", "created_at"),
+        Index("ix_device_events_created_at", "created_at"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
